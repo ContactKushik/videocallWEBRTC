@@ -8,12 +8,19 @@ const rtcSettings = {
 };
 
 const initialize = async () => {
+  console.log("initialize function ran");
   socket.on("signalingMessage", handleSignalingMessage);
+
+
+  //⚠️⚠️⚠️⚠️ code for getting local video stream⚠️⚠️⚠️⚠️⚠️⚠️⚠️
   local = await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: true,
   });
   document.querySelector("#localVideo").srcObject = local;
+  // ---------------------------------------
+
+
   initiateOffer();
 };
 
@@ -26,17 +33,21 @@ const initiateOffer = async () => {
 
 const createPeerConnection = async () => {
   peerconnection = new RTCPeerConnection(rtcSettings);
+  // remote is a MediaStream object to hold media (audio/video) received from the remote peer
   remote = new MediaStream();
   document.querySelector("#remoteVideo").srcObject = remote;
+
 
   local.getTracks().forEach((track) => peerconnection.addTrack(track, local));
 
   peerconnection.ontrack = (event) => {
-    console.log("Received remote track:", event.streams[0]);
+    // console.log("Received remote track:", event.streams[0]);
+    console.log(event);
     event.streams[0].getTracks().forEach((track) => remote.addTrack(track));
   };
 
   peerconnection.onicecandidate = (event) => {
+    console.log("THIS IS THE SECTION INSIDE THE peeerconnection.onicecandidate :", event.candidate);
     if (event.candidate) {
       socket.emit(
         "signalingMessage",
@@ -63,9 +74,9 @@ const handleOffer = async (offer) => {
 
   socket.emit("signalingMessage", JSON.stringify({ type: "answer", answer }));
 };
-
+  
 const handleAnswer = async (answer) => {
   await peerconnection.setRemoteDescription(answer);
 };
-
+// this function is a much needded for us to implement the webrtc without this nothing will happen
 initialize();
